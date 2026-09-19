@@ -3,7 +3,7 @@
 # https://arxiv.org/abs/2206.02303
 
 get_dgp <- function(y, x, w, weight) {
-  vw <- cov.wt(w, wt = weight)$cov
+  vw <- if (is.null(weight)) cov(w) else cov.wt(w, wt = weight)$cov
   
   i <- nrow(vw) - 1
   while (i >= 2) {
@@ -25,7 +25,7 @@ get_dgp <- function(y, x, w, weight) {
   
   data <- cbind(y, x, w)
   
-  v <- cov.wt(data, wt = weight)$cov
+  v <- if (is.null(weight)) cov(data) else cov.wt(data, wt = weight)$cov
   
   s.var_y <- v[1, 1]
   s.var_x <- v[2, 2]
@@ -133,24 +133,28 @@ beta_bounds <- function(c, rx, s) {
   return(bounds)
 }
 
-dmpw <- function(ff, weights, data) {
-  mm <- model.frame(ff, data, weights = wt)
-  y <- model.response(mm)
-  
-  # Extract RHS variables
-  rhs_vars <- all.vars(ff[[3]])
+dmpw <- function(formula, data, weights, subset, na.action) {
+  mf <- match.call(expand.dots = FALSE)
+  m <- match(c("formula", "data", "subset", "weights", "na.action"),
+             names(mf), 0L)
+  mf <- mf[c(1L, m)]
+  mf$drop.unused.levels <- TRUE
+  mf[[1L]] <- quote(stats::model.frame)
+  mm <- eval(mf, parent.frame())
+
+  rhs_vars <- all.vars(formula[[3]])
   x_var <- rhs_vars[1]
   w_vars <- rhs_vars[-1]
-  
-  x <- mm[[x_var]]
-  w <- mm[w_vars]
-  
+
+  y  <- model.response(mm)
+  x  <- mm[[x_var]]
+  w  <- mm[w_vars]
   wt <- model.weights(mm)
-  
+
   s <- get_dgp(y, x, w, wt)
   rx <- seq(0, 1, by = 0.1)
   bounds <- beta_bounds(1, rx, s)
-  return(cbind(rx, bounds))
+  cbind(rx, bounds)
 }
 
 
