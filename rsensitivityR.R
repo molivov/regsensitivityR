@@ -4,25 +4,9 @@
 
 get_dgp <- function(y, x, w, weight) {
   vw <- if (is.null(weight)) cov(w) else cov.wt(w, wt = weight)$cov
-  
-  i <- nrow(vw) - 1
-  while (i >= 2) {
-    if (vw[i, i] == 0) {
-      imin <- max(c(1, i - 1))
-      imax <- min(c(ncol(w), i + 1))
-      w <- cbind(w[, 1:imin], w[, imax:ncol(w)])
-    }
-    i <- i - 1
-  }
-  
-  if (vw[ncol(vw), ncol(vw)] == 0) {
-    w <- w[, 1:(ncol(vw) - 1)]
-  }
-  
-  if (vw[1, 1] == 0) {
-    w <- w[, 2:ncol(w)]
-  }
-  
+  keep <- diag(vw) != 0
+  w <- w[, keep, drop = FALSE]
+
   data <- cbind(y, x, w)
   
   v <- if (is.null(weight)) cov(data) else cov.wt(data, wt = weight)$cov
