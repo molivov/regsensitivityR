@@ -1,5 +1,5 @@
 # this script implements regsensitivy in R
-# based Diegert, Masten, Poirier (2026)
+# based on Diegert, Masten, Poirier (2026)
 # https://arxiv.org/abs/2206.02303
 
 get_dgp <- function(y, x, w, weight) {
@@ -117,7 +117,7 @@ beta_bounds <- function(c, rx, s) {
   return(bounds)
 }
 
-dmpw <- function(formula, data, weights, subset, na.action) {
+regsensitivity <- function(formula, data, weights, subset, na.action) {
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "weights", "na.action"),
              names(mf), 0L)
@@ -140,28 +140,3 @@ dmpw <- function(formula, data, weights, subset, na.action) {
   bounds <- beta_bounds(1, rx, s)
   cbind(rx, bounds)
 }
-
-
-##
-
-library(haven)
-library(tidyverse)
-
-dta <- read_dta("~/downloads/bfg2020.dta")
-dtaw <- dta %>%
-  mutate(
-    wt = 1 #runif(nrow(dta))
-         )
-ff <- avgrep2000to2016 ~ tye_tfe890_500kNI_100_l6 + rain_mean + elev_mean + d_coa + d_riv + d_lak
-mm <- model.frame(ff, dtaw, weights=wt)
-y <- model.response(mm)
-x <- mm[, 2]
-w <- mm[, 3:(ncol(mm)-1)]
-wt <- model.weights(mm)
-#wt1 <- rep(1, length(y))
-s <- get_dgp(y, x, w, wt)
-#res <- dmp(ff, data=dta)
-resw <- dmpw(ff, weight=wt, data=dtaw)
-
-
-
